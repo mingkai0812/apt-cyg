@@ -61,6 +61,7 @@ function usage()
   "apt-cyg find <patterns>" to find packages matching patterns
   "apt-cyg describe <patterns>" to describe packages matching patterns
   "apt-cyg packageof <commands or files>" to locate parent packages
+  "apt-cyg makemirror" to make a "mirror" based on cached files and a mirror
 Options:
   --arch, -a <arch>          : redefine architecture (intended for fetching on different architecture machine)
   --prefix, -p <prefix>      : prefix to install packages to (for debug purposes; must be set first)
@@ -81,7 +82,7 @@ EOF
 function version()
 {
   cat <<EOF
-apt-cyg version 0.57.3
+apt-cyg version 0.57.4
 Written by Stephen Jungels
 
 Copyright (c) 2005-9 Stephen Jungels.  Released under the GPL.
@@ -669,6 +670,29 @@ function command_install
     fetch_and_install $fetch_only $ignore_md5_errors
 }
 
+function command_makemirror
+{
+    findworkspace
+    # find all packages
+    package_dirs=$(find $arch -iname '*.*z*' \
+        | while read package
+        do
+            echo $(dirname "$package") &&
+            echo $(dirname "$package") >&2
+        done \
+        | awk '!_[$1]++' )
+    for pack in ${package_dirs[@]}
+    do
+        setup_hint="$pack/setup.hint"
+        # if file is absent or forced
+        if ! test -f "$setup_hint" -a -z "$force"
+        then
+            wget "$mirror/$setup_hint" --output-document "$setup_hint"
+        fi
+    done
+    echo 'Done! Now you can run `genini` script'
+}
+
 function command_packageof
 {
     checkpackages
@@ -891,7 +915,7 @@ do
         shift; shift
     ;;
 
-    outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove)
+    outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove|makemirror)
       if test "-$command-" = "--"
       then
         command=$1
@@ -918,7 +942,7 @@ fill_packages "$file" "$packages_category" 1
 
 case "$command" in
 
-  outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove)
+  outdated|update|upgrade|show|find|describe|packageof|install|localinstall|remove|makemirror)
       # execute an appropriate function
       command_$command
   ;;

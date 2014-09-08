@@ -91,6 +91,15 @@ Copyright (c) 2013 Denny Schäfer.
 EOF
 }
 
+function is_script_traced
+{
+    if [[ "$-" == *x* ]]
+    then
+        return 0
+    fi
+    return 1
+}
+
 function mirror_name_url_to_file
 {
     local arg="$1"
@@ -220,6 +229,10 @@ function listoutdated()
     file_available=/tmp/apt-cyg.available.$$_
     show_installed_packages 1 >$file_installed
     show_available_packages 1 >$file_available
+    if ! test -s "$file_available"
+    then
+        echo "Warning! $file_available is empty!" 1>&2
+    fi
     packages_changed=$(diff -d -y $file_installed $file_available  | grep -e '|' | awk '{ print $1 }')
     q_verbose="$1"
     for pkg in $packages_changed
@@ -240,7 +253,10 @@ function listoutdated()
             echo "Warning: Package $pkg ($version_installed) is absent on this mirror" >&2
         fi
     done
-    rm $file_installed $file_available
+    if ! is_script_traced
+    then
+        rm $file_installed $file_available
+    fi
 }
 
 function unpack()
@@ -565,7 +581,10 @@ function upgrade()
     do
         "$APT_CYG" --prefix "$prefix" install --noupdate --force $fetch_only "$pkg"
     done
-    rm $file_outdated
+    if ! is_script_traced
+    then
+        rm $file_outdated
+    fi
 }
 
 function init_vars()

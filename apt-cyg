@@ -539,6 +539,22 @@ function show_available_packages()
             FS="\n";
             ORS="\n"
         }
+        function print_verbose(verbose) {
+            if (verbose == 0)
+                NF=1
+            else {
+                for(i=3; i<=NF; i++) {
+                    if ($i ~ version_re) {
+                        $2=$i;
+                        NF=2;
+                        sub(version_re, "", $2)
+                    }
+                }
+            };
+            if (NF>2)
+                NF=1;
+            print
+        }
         {
             if ($1 ~ "^#") next;
             matched=""
@@ -548,27 +564,20 @@ function show_available_packages()
                     if ($i ~ requires_re) {
                         requires=$i
                         sub(requires_re, "", requires)
-                    } else if ($i ~ category_re && $i ~ category) {
+                    } else if ($i ~ category_re && (category = "<>" || $i ~ category)) {
                         sub(category_re, "", $i)
                         matched=$1
                     }
                 }
-                if (matched) print matched, requires
-            } else if ($1 ~ query) {
-                if (verbose == 0)
-                    NF=1
-                else {
-                    for(i=3; i<=NF; i++) {
-                        if ($i ~ version_re) {
-                            $2=$i;
-                            NF=2;
-                            sub(version_re, "", $2)
-                        }
+                if (matched) {
+                    if (category = "<>") {
+                        print_verbose(verbose)
+                    } else {
+                        print matched, requires
                     }
-                };
-                if (NF>2)
-                    NF=1;
-                print
+                }
+            } else if ($1 ~ query) {
+               print_verbose(verbose)
             }
         }' | sort | sed -e '/^_/{$!{H;d}}; $G' | sed -e '/^$/d'
 }

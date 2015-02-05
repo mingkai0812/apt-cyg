@@ -101,7 +101,7 @@ function findworkspace()
 {
   # default working directory and mirror
 
-  mirror=ftp://mirror.mcs.anl.gov/pub/cygwin
+  mirror=ftp://mirror.steadfast.net/cygwin/
   cache=/setup
 
   # work wherever setup worked last, if possible
